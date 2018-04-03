@@ -1,0 +1,18 @@
+[package]
+name = "conway"
+version = "0.1.0"
+authors = ["Jasper v. B. <jasper@mezzo.de>"]
+
+[dependencies]
+cgmath = "0.14.1"
+gl = "0.6.2"
+glfw = "0.15.0"
+image = "0.14.0"
+
+[lib]
+name = "conway"
+path = "src/lib.rs"
+
+[[bin]]
+name = "conway-bin"
+path= "src/main.rs"

@@ -1,0 +1,5 @@
+* Conway's Game of Life
+
+This is (not yet) a multi-threaded implementation of [[https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life][Conway's Game of Life]] in
+Rust. The main purpose is to teach myself some Rust, so the code quality might
+be quite subpar.

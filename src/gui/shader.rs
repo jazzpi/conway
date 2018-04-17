@@ -19,6 +19,7 @@ impl From<io::Error> for ShaderError {
     }
 }
 
+/// A shader program object
 pub struct Shader {
     id: u32,
 }
@@ -69,6 +70,7 @@ impl Shader {
     }
 
     /// Create a new Vertex Array Object
+    /// *Note:* The program has to be active before this is called
     pub fn create_vao(&mut self) -> u32 {
         let mut vao: u32 = 0;
         unsafe {
@@ -77,6 +79,7 @@ impl Shader {
         vao
     }
     /// Bind a VAO
+    /// *Note:* The program has to be active before this is called
     pub fn bind_vao(&mut self, vao: u32) {
         unsafe {
             gl::BindVertexArray(vao);
@@ -84,6 +87,7 @@ impl Shader {
     }
 
     /// Create a new Vertex Buffer Object
+    /// *Note:* The program has to be active before this is called
     pub fn create_vbo(&mut self) -> u32 {
         let mut vbo: u32 = 0;
         unsafe {
@@ -92,6 +96,7 @@ impl Shader {
         vbo
     }
     /// Bind a VBO
+    /// *Note:* The program has to be active before this is called
     pub fn bind_vbo(&mut self, target: gl::types::GLenum, vbo: u32) {
         unsafe {
             gl::BindBuffer(target, vbo)
@@ -106,6 +111,7 @@ impl Shader {
     }
 
     /// Bind a uniform float
+    /// *Note:* The program has to be active before this is called
     pub fn set_f32(&mut self, name: &CStr, value: f32) {
         unsafe {
             let location = gl::GetUniformLocation(self.id, name.as_ptr());
@@ -113,10 +119,30 @@ impl Shader {
         }
     }
     /// Bind a uniform ivec2
+    /// *Note:* The program has to be active before this is called
     pub fn set_i32_v2(&mut self, name: &CStr, value: (i32, i32)) {
         unsafe {
             let location = gl::GetUniformLocation(self.id, name.as_ptr());
             gl::Uniform2i(location, value.0, value.1);
+        }
+    }
+
+    /// Get a uniform float
+    pub fn get_uniform_f32(&mut self, name: &CStr) -> f32 {
+        unsafe {
+            let location = gl::GetUniformLocation(self.id, name.as_ptr());
+            let mut tmp : [f32; 1] = [0.0];
+            gl::GetUniformfv(self.id, location, tmp.as_mut_ptr());
+            tmp[0]
+        }
+    }
+    /// Get a uniform ivec2
+    pub fn get_uniform_i32_v2(&mut self, name: &CStr) -> (i32, i32) {
+        unsafe {
+            let location = gl::GetUniformLocation(self.id, name.as_ptr());
+            let mut tmp : [i32; 2] = [0, 0];
+            gl::GetUniformiv(self.id, location, tmp.as_mut_ptr());
+            (tmp[0], tmp[1])
         }
     }
 

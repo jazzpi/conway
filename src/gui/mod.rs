@@ -191,13 +191,14 @@ impl Window {
 /// Create a Window, create an OpenGL context, initialize OpenGL, setup the
 /// Renderer etc.
 pub fn init() -> (Window, Renderer) {
-    let mut win = Window::new((800, 600), "Conway's Game of Life");
+    let mut win = Window::new((600, 600), "Conway's Game of Life");
     win.init_gl();
     let renderer = Renderer::new();
     (win, renderer)
 }
 
 mod shader;
+pub use self::shader::Shader;
 // mod control;
 mod renderer;
 pub use self::renderer::Renderer;

@@ -1,6 +1,7 @@
 //! The actual backend (i.e., the magic happens here).
 
-type Point = (i32, i32);
+/// A 2D, integer point
+pub type Point = (i32, i32);
 
 /// Axis-aligned Bounding Box
 ///

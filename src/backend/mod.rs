@@ -3,6 +3,22 @@
 /// A 2D, integer point
 pub type Point = (i32, i32);
 
+pub fn point_minmax(a: Point, b: Point) -> (Point, Point) {
+    if a.0 < b.0 {
+        if a.1 < b.1 {
+            ((a.0, a.1), (b.0, b.1))
+        } else {
+            ((a.0, b.1), (b.0, a.1))
+        }
+    } else {
+        if a.1 < b.1 {
+            ((b.0, a.1), (a.0, b.1))
+        } else {
+            ((b.0, b.1), (a.0, a.1))
+        }
+    }
+}
+
 /// Axis-aligned Bounding Box
 ///
 /// The bottom and left borders are considered to be part of the bounding box,
@@ -18,6 +34,19 @@ impl AABB {
     pub fn new(center: Point, half_dim: i32) -> AABB {
         AABB {
             center,
+            half_dim,
+        }
+    }
+
+    /// Create a new bounding box that contains (at least) everything between
+    /// two points.
+    pub fn between(a: Point, b: Point) -> AABB {
+        let (min, max) = point_minmax(a, b);
+        let x = (((max.0 - min.0) as f32) / 2.0_f32).floor() as i32 + 1;
+        let y = (((max.1 - min.1) as f32) / 2.0_f32).floor() as i32 + 1;
+        let half_dim = if x > y {x} else {y};
+        AABB {
+            center: (min.0 + x, min.1 + y),
             half_dim,
         }
     }
@@ -358,6 +387,24 @@ impl<'a> IntoIterator for &'a QTree {
 mod tests {
     use super::*;
 
+    mod functions {
+        use super::{Point, point_minmax};
+
+        fn minmax_check(points: (Point, Point)) {
+            let (a, b) = points;
+            assert_eq!(a, (-1, -1));
+            assert_eq!(b, (2, 3));
+        }
+
+        #[test]
+        fn minmax() {
+            minmax_check(point_minmax((-1, -1), (2, 3)));
+            minmax_check(point_minmax((-1, 3), (2, -1)));
+            minmax_check(point_minmax((2, -1), (-1, 3)));
+            minmax_check(point_minmax((2, 3), (-1, -1)));
+        }
+    }
+
     mod aabb {
         use super::AABB;
 
@@ -374,6 +421,22 @@ mod tests {
             assert!(!bb.contains((10, 6)));
             assert!(!bb.contains((14, 6)));
             assert!(!bb.contains((6, -3)));
+        }
+
+        #[test]
+        fn between() {
+            let bb = AABB::between((10, 2), (-1, 10));
+            assert!(bb.contains((10, 2)));
+            assert!(bb.contains((-1, 10)));
+            let bb = AABB::between((-1, 10), (10, 2));
+            assert!(bb.contains((-1, 10)));
+            assert!(bb.contains((10, 2)));
+            let bb = AABB::between((-1, 10), (10, -1));
+            assert!(bb.contains((-1, 10)));
+            assert!(bb.contains((10, -1)));
+            let bb = AABB::between((-1, -1), (5, -1));
+            assert!(bb.contains((-1, -1)));
+            assert!(bb.contains((5, -1)));
         }
 
         #[test]

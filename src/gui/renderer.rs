@@ -17,6 +17,7 @@ const DEFAULT_HEIGHT_IN_CELLS: f32 = 20.0;
 pub struct Renderer {
     game_shader: Shader,
     game_vao: u32, game_vbo: u32,
+    game_vertices: Vec<f32>,
     grid_shader: Shader,
     grid_vao: u32, grid_vbo: u32,
     grid_vertices: Vec<f32>,
@@ -45,13 +46,13 @@ impl Renderer {
         let mut renderer = Renderer {
             game_shader,
             game_vao, game_vbo,
+            game_vertices: vec![],
             grid_shader,
             grid_vao, grid_vbo,
             grid_vertices: vec![],
             viewport: Viewport::new(),
         };
 
-        renderer.buffer_data();
         renderer.set_zoom(1.0);
 
         renderer.game_shader.use_program();
@@ -62,27 +63,6 @@ impl Renderer {
         renderer.grid_shader.bind_vao(0);
 
         renderer
-    }
-
-    fn buffer_data(&mut self) {
-        self.game_shader.use_program();
-        let vertices: [f32; 8] = [
-            0.0, 1.0, // left top
-            0.0, 0.0, // left bottom
-            1.0, 0.0, // right bottom
-            1.0, 1.0, // right top
-        ];
-        self.game_shader.bind_vao(self.game_vao);
-        self.game_shader.bind_vbo(gl::ARRAY_BUFFER, self.game_vbo);
-        unsafe {
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (vertices.len() * size_of::<f32>()) as isize,
-                &vertices[0] as *const f32 as *const c_void,
-                gl::STATIC_DRAW
-            );
-        }
-        Self::setup_vao(&mut self.game_shader, "pos");
     }
 
     fn setup_vao(shader: &mut Shader, location: &str) {
@@ -167,16 +147,46 @@ impl Renderer {
         self.update_grid();
     }
 
+    fn make_game_vertices<T: IntoIterator<Item=Point>>(&mut self, data: T) {
+        self.game_shader.use_program();
+        self.game_vertices.clear();
+        {
+            let mut push_point = |x: f32, y: f32| {
+                self.game_vertices.push(x);
+                self.game_vertices.push(y);
+            };
+            for cell in data {
+                let (x, y) = (cell.0 as f32, cell.1 as f32);
+                push_point(x - 1.0, y - 1.0);
+                push_point(x - 1.0, y);
+                push_point(x, y - 1.0);
+                push_point(x - 1.0, y);
+                push_point(x, y - 1.0);
+                push_point(x, y);
+            }
+        }
+        self.game_shader.bind_vao(self.game_vao);
+        self.game_shader.bind_vbo(gl::ARRAY_BUFFER, self.game_vbo);
+        unsafe {
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (self.game_vertices.len() * size_of::<f32>()) as isize,
+                &self.game_vertices[0] as *const f32 as *const c_void,
+                gl::STATIC_DRAW
+            );
+        }
+        Self::setup_vao(&mut self.game_shader, "pos");
+    }
+
     /// Actually draw to the buffer
     pub fn draw(&mut self) {
-        let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
+        self.make_game_vertices(vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 2)]);
         unsafe {
             gl::ClearColor(0.2, 0.2, 0.2, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             self.game_shader.use_program();
             self.game_shader.bind_vao(self.game_vao);
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT,
-                             &indices[0] as *const u32 as *const c_void);
+            gl::DrawArrays(gl::TRIANGLES, 0, (self.game_vertices.len() / 2) as i32);
             self.grid_shader.use_program();
             self.grid_shader.bind_vao(self.grid_vao);
             gl::DrawArrays(gl::LINES, 0, (self.grid_vertices.len() / 2) as i32);

@@ -5,7 +5,10 @@ use self::glfw::Context;
 
 extern crate gl;
 
-use std::sync::mpsc;
+use std::sync::Arc;
+use std::sync::mpsc::Receiver;
+
+use backend::data::QTree;
 
 #[derive(Clone, Debug)]
 /// Indicates what modifiers are held down
@@ -108,7 +111,7 @@ impl<'a, 'b> Iterator for EventIterator<'a, 'b> {
     }
 }
 
-type EventReceiver = mpsc::Receiver<(f64, glfw::WindowEvent)>;
+type EventReceiver = Receiver<(f64, glfw::WindowEvent)>;
 
 /// Represents a window, mostly handles events
 pub struct Window {
@@ -186,15 +189,36 @@ impl Window {
     }
 }
 
-/// Initialize the GUI.
-///
-/// Create a Window, create an OpenGL context, initialize OpenGL, setup the
-/// Renderer etc.
-pub fn init() -> (Window, Renderer) {
-    let mut win = Window::new((600, 600), "Conway's Game of Life");
-    win.init_gl();
-    let renderer = Renderer::new();
-    (win, renderer)
+pub struct GUI {
+    window: Window,
+    renderer: Renderer,
+}
+
+impl GUI {
+    pub fn new() -> GUI {
+        let window = Window::new((600, 600), "Conway's Game of Life");
+        window.init_gl();
+        let renderer = Renderer::new();
+        GUI {
+            window,
+            renderer,
+        }
+    }
+
+    pub fn render_loop(&mut self, recv: Receiver<Arc<QTree>>) {
+        while let Ok(data) = recv.recv() {
+            self.renderer.draw(&*data);
+            self.window.window.swap_buffers();
+        }
+    }
+}
+
+/// Start the render loop
+pub fn render_loop(mut renderer: Renderer, window: Window, recv: Receiver<Arc<QTree>>) {
+    while let Ok(data) = recv.recv() {
+        renderer.draw(&*data);
+        window.window.swap_buffers();
+    }
 }
 
 mod shader;

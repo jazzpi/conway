@@ -189,6 +189,7 @@ impl Window {
     }
 }
 
+/// Wrapper around the various GUI parts
 pub struct GUI {
     window: Window,
     renderer: Renderer,
@@ -196,6 +197,10 @@ pub struct GUI {
 }
 
 impl GUI {
+    /// Constructs a new GUI.
+    ///
+    /// **Note:** Since we initialize GLFW in here, this _must_ be called from
+    /// the main thread.
     pub fn new(data_recv: Receiver<Arc<QTree>>) -> GUI {
         let mut window = Window::new((600, 600), "Conway's Game of Life");
         window.init_gl();
@@ -207,6 +212,10 @@ impl GUI {
         }
     }
 
+    /// Runs the main GUI loop.
+    ///
+    /// **Note:** Since we poll GLFW events in here, this _must_ be called from
+    /// the main thread.
     pub fn run(mut self) {
         while !self.window.window.should_close() {
             let mut should_close = false;

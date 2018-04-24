@@ -11,6 +11,10 @@ use self::updater::Updater;
 /// A 2D, integer point
 pub type Point = (i32, i32);
 
+/// Creates a "minimal" and "maximal" point from two points.
+///
+/// The minimal point will have the minimal x and minimal y coordinates of
+/// a and b (and vice versa for the maximal point).
 pub fn point_minmax(a: Point, b: Point) -> (Point, Point) {
     if a.0 < b.0 {
         if a.1 < b.1 {
@@ -29,6 +33,9 @@ pub fn point_minmax(a: Point, b: Point) -> (Point, Point) {
 
 use self::data::{AABB, QTree};
 
+/// The controller glues the whole game together and controls the logic flow.
+///
+/// **TODO:** Should this be in backend?
 pub struct Controller {
     gui: gui::GUI,
     updater: thread::JoinHandle<()>,

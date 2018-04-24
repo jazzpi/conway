@@ -1,3 +1,5 @@
+//! Data storage.
+
 use super::{Point, point_minmax};
 
 /// Axis-aligned Bounding Box

@@ -90,6 +90,11 @@ impl QTree {
         tree
     }
 
+    /// Returns the current boundary of the quad tree.
+    pub fn boundary(&self) -> AABB {
+        self.boundary.clone()
+    }
+
     /// Check if there is something at a `point` in the quadtree.
     pub fn get(&self, point: Point) -> bool {
         if let Some(ref points) = self.points {

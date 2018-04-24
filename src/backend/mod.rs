@@ -1,6 +1,12 @@
 //! The actual backend (i.e., the magic happens here).
 
+use gui;
+use std::sync::{mpsc, Arc};
+use std::thread;
+
 pub mod data;
+mod updater;
+use self::updater::Updater;
 
 /// A 2D, integer point
 pub type Point = (i32, i32);
@@ -18,6 +24,48 @@ pub fn point_minmax(a: Point, b: Point) -> (Point, Point) {
         } else {
             ((b.0, b.1), (a.0, a.1))
         }
+    }
+}
+
+use self::data::{AABB, QTree};
+
+pub struct Controller {
+    gui: gui::GUI,
+    updater: thread::JoinHandle<()>,
+}
+
+impl Controller {
+    /// Constructs a new controller.
+    ///
+    /// **Note:** Since we construct the GUI in here, this _must_ be called
+    /// from the main thread.
+    pub fn new() -> Controller {
+        let (data_send, data_recv) = mpsc::channel();
+
+        let data = Arc::new(QTree::new(
+            AABB::new((0, 0), 4),
+            &vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 2)]
+        ));
+
+        let gui = gui::GUI::new(data_recv);
+
+        let updater = thread::spawn(|| {
+            Updater::new(data, data_send).run();
+        });
+
+        Controller {
+            gui,
+            updater,
+        }
+    }
+
+    /// Runs the game.
+    ///
+    /// **Note:** Since we poll GLFW events in here, this _must_ be called
+    /// from the main thread.
+    pub fn run(self) {
+        self.gui.run();
+        self.updater.join().expect("Couldn't join updater!");
     }
 }
 

@@ -179,8 +179,8 @@ impl Renderer {
     }
 
     /// Actually draw to the buffer
-    pub fn draw(&mut self) {
-        self.make_game_vertices(vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 2)]);
+    pub fn draw<T: IntoIterator<Item=Point>>(&mut self, data: T) {
+        self.make_game_vertices(data);
         unsafe {
             gl::ClearColor(0.2, 0.2, 0.2, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);

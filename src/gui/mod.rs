@@ -5,7 +5,10 @@ use self::glfw::Context;
 
 extern crate gl;
 
-use std::sync::mpsc;
+use std::sync::Arc;
+use std::sync::mpsc::Receiver;
+
+use backend::data::QTree;
 
 #[derive(Clone, Debug)]
 /// Indicates what modifiers are held down
@@ -108,7 +111,7 @@ impl<'a, 'b> Iterator for EventIterator<'a, 'b> {
     }
 }
 
-type EventReceiver = mpsc::Receiver<(f64, glfw::WindowEvent)>;
+type EventReceiver = Receiver<(f64, glfw::WindowEvent)>;
 
 /// Represents a window, mostly handles events
 pub struct Window {
@@ -186,19 +189,54 @@ impl Window {
     }
 }
 
-/// Initialize the GUI.
-///
-/// Create a Window, create an OpenGL context, initialize OpenGL, setup the
-/// Renderer etc.
-pub fn init() -> (Window, Renderer) {
-    let mut win = Window::new((600, 600), "Conway's Game of Life");
-    win.init_gl();
-    let renderer = Renderer::new();
-    (win, renderer)
+pub struct GUI {
+    window: Window,
+    renderer: Renderer,
+    data_recv: Receiver<Arc<QTree>>,
+}
+
+impl GUI {
+    pub fn new(data_recv: Receiver<Arc<QTree>>) -> GUI {
+        let mut window = Window::new((600, 600), "Conway's Game of Life");
+        window.init_gl();
+        let renderer = Renderer::new();
+        GUI {
+            window,
+            renderer,
+            data_recv,
+        }
+    }
+
+    pub fn run(mut self) {
+        while !self.window.window.should_close() {
+            let mut should_close = false;
+            for ev in self.window.get_events() {
+                println!("{:?}", ev);
+                match ev {
+                    Event::FramebufferSize(width, height) => {
+                        self.renderer.set_viewport(width, height);
+                    }
+                    Event::Key(glfw::Key::Escape, _, _, mods) => {
+                        if mods.is_empty() {
+                            should_close = true;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            if should_close {
+                self.window.window.set_should_close(true);
+                break;
+            }
+            if let Ok(data) = self.data_recv.recv() {
+                self.renderer.draw(&*data);
+            }
+            self.window.window.swap_buffers();
+        }
+    }
 }
 
 mod shader;
 pub use self::shader::Shader;
-// mod control;
 mod renderer;
 pub use self::renderer::Renderer;
